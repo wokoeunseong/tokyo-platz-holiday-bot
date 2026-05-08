@@ -54,13 +54,10 @@ def check_holiday(date_str, holidays):
 def build_message(date_str, holiday_name, weather):
     if holiday_name:
         return (
-            f"🎌 오늘({date_str})은 일본 공휴일입니다 — {holiday_name} — 도쿄플라츠커피 운영 여부를 확인해주세요."
-            f" | 🗼 도쿄 날씨: {weather}"
+            f"🎌 오늘({date_str})은 일본 공휴일입니다 — {holiday_name} — "
+            f"도쿄플라츠커피 운영 여부를 확인해주세요. | 🗼 도쿄 날씨: {weather}"
         )
-    return (
-        f"✅ 오늘({date_str})은 공휴일이 아닙니다 — 정상 영업일입니다."
-        f" | 🗼 도쿄 날씨: {weather}"
-    )
+    return f"✅ 오늘({date_str})은 공휴일이 아닙니다 — 정상 영업일입니다. | 🗼 도쿄 날씨: {weather}"
 
 def post_to_slack(webhook_url, message):
     data = json.dumps({"message": message}, ensure_ascii=False).encode("utf-8")
