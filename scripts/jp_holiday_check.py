@@ -10,6 +10,7 @@ WEATHER_API_URL = (
     "https://api.open-meteo.com/v1/forecast"
     "?latitude=35.6762&longitude=139.6503"
     "&current=temperature_2m,weather_code"
+    "&daily=temperature_2m_max,temperature_2m_min"
     "&timezone=Asia%2FTokyo"
 )
 
@@ -43,10 +44,12 @@ def fetch_weather():
     )
     with urllib.request.urlopen(req, timeout=10) as res:
         data = json.loads(res.read().decode("utf-8"))
-    temp = round(data["current"]["temperature_2m"])
+    current_temp = round(data["current"]["temperature_2m"])
     code = data["current"]["weather_code"]
     desc = WEATHER_CODES.get(code, "🌡 날씨 정보 없음")
-    return f"{desc} {temp}°C"
+    temp_max = round(data["daily"]["temperature_2m_max"][0])
+    temp_min = round(data["daily"]["temperature_2m_min"][0])
+    return f"{desc} {current_temp}°C (최고 {temp_max}° / 최저 {temp_min}°)"
 
 def check_holiday(date_str, holidays):
     return holidays.get(date_str)
