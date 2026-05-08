@@ -2,7 +2,7 @@ name: Japan Holiday Check
 
 on:
   schedule:
-    - cron: '0 23 * * *'
+    - cron: '0 17 * * *'
   workflow_dispatch:
 
 jobs:
