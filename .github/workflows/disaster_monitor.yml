@@ -1,0 +1,64 @@
+name: Japan Disaster Monitor
+
+on:
+  # 日次サマリー: 毎日 KST 08:00 (UTC 23:00 前日)
+  schedule:
+    - cron: "0 23 * * *"   # daily summary (KST 08:00)
+    - cron: "*/10 * * * *" # urgent check every 10 minutes
+
+  # 手動実行 (テスト用)
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "実行モード (daily / urgent)"
+        required: true
+        default: "daily"
+        type: choice
+        options:
+          - daily
+          - urgent
+
+jobs:
+  # ── 日次サマリー ──────────────────────────────────
+  daily-summary:
+    # cron "0 23 * * *" または手動でmode=dailyの場合のみ実行
+    if: |
+      (github.event_name == 'schedule' && github.event.schedule == '0 23 * * *') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'daily')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run daily summary
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          MONITOR_MODE: daily
+        run: python scripts/disaster_monitor.py
+
+  # ── 緊急監視 (10分ごと) ──────────────────────────
+  urgent-check:
+    # cron "*/10 * * * *" または手動でmode=urgentの場合のみ実行
+    if: |
+      (github.event_name == 'schedule' && github.event.schedule == '*/10 * * * *') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'urgent')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run urgent check
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          MONITOR_MODE: urgent
+        run: python scripts/disaster_monitor.py
