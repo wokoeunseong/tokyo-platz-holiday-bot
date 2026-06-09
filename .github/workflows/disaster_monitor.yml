@@ -3,7 +3,7 @@ name: Japan Disaster Monitor
 on:
   # 日次サマリー: 毎日 KST 08:00 (UTC 23:00 前日)
   schedule:
-    - cron: "0 23 * * *"   # daily summary (KST 08:00)
+    - cron: "0 23 * * *"   # daily summary (KST 02:00, 실제 도달 ~08:00)
     - cron: "*/10 * * * *" # urgent check every 10 minutes
 
   # 手動実行 (テスト用)
