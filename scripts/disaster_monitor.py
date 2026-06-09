@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 """
 disaster_monitor.py
-日本の自然災害監視 → Slack通知
+일본 자연재해 모니터링 → Slack 알림
 
-対応災害:
-  - 地震 (P2PQuake JSON API v2)
-  - 津波 (P2PQuake JSON API v2)
-  - 台風 (気象庁 JMAXML 定期配信フィード extra.xml)
-  - 大雨特別警報 (同上)
+대응 재해:
+  - 지진 (P2PQuake JSON API v2)
+  - 쓰나미 (P2PQuake JSON API v2)
+  - 태풍 (기상청 JMAXML 피드)
+  - 대우 특별경보 (기상청 JMAXML 피드)
 
-動作モード (環境変数 MONITOR_MODE で切替):
-  - "daily"   : 毎日定時要約 (前24時間の地震 + 活性台風 + 大雨警報)
-  - "urgent"  : 緊急監視 (閾値超えたら即送信、何もなければ無音)
+동작 모드 (환경변수 MONITOR_MODE):
+  - "daily"  : 매일 정시 요약 (전24시간 지진 + 태풍 현황)
+  - "urgent" : 긴급 감시 (임계값 초과 시만 전송, 이하면 무음)
 
-必須環境変数:
-  - SLACK_WEBHOOK_URL : Slack Workflow Builder の Webhook URL
+필수 환경변수:
+  - SLACK_WEBHOOK_URL : Slack Workflow Builder 웹훅 URL
   - MONITOR_MODE      : "daily" or "urgent"
 """
 
@@ -26,59 +26,56 @@ import urllib.request
 import urllib.error
 from datetime import datetime, timezone, timedelta
 
-# ── 定数 ──────────────────────────────────────────────
+# ── 상수 ──────────────────────────────────────────────
 JST = timezone(timedelta(hours=9))
 
 # P2PQuake API v2
 QUAKE_API   = "https://api.p2pquake.net/v2/jma/quake?limit=20&order=-1"
 TSUNAMI_API = "https://api.p2pquake.net/v2/jma/tsunami?limit=5&order=-1"
 
-# 気象庁 JMAXML 配信フィード
-# extra.xml = 高頻度(随時): 台風情報・特別警報など
-# regular.xml = 定期配信: 通常警報・注意報など
-JMA_FEED_EXTRA   = "https://www.data.jma.go.jp/developer/xml/feed/extra.xml"
-JMA_FEED_REGULAR = "https://www.data.jma.go.jp/developer/xml/feed/regular.xml"
+# 기상청 JMAXML 배신 피드
+JMA_FEED_EXTRA = "https://www.data.jma.go.jp/developer/xml/feed/extra.xml"
 
-# ── 緊急アラート閾値 ──────────────────────────────────
-# maxScale: JMA震度スケール
-#   10=震度1, 20=震度2, 30=震度3, 40=震度4
-#   45=震度5弱, 50=震度5強, 55=震度6弱, 60=震度6強, 70=震度7
-URGENT_MAX_SCALE    = 30    # 震度3以上でアラート
-URGENT_MAGNITUDE    = 4.5   # M4.5以上でアラート
-DAILY_MIN_SCALE     = 20    # 震度2以上を日次サマリーに含める
-DAILY_MIN_MAGNITUDE = 3.0   # M3.0以上を日次サマリーに含める
+# ── 긴급 알림 임계값 ──────────────────────────────────
+# maxScale: JMA 진도 스케일
+#   10=진도1, 20=진도2, 30=진도3, 40=진도4
+#   45=진도5약, 50=진도5강, 55=진도6약, 60=진도6강, 70=진도7
+URGENT_MAX_SCALE    = 30    # 진도3 이상에서 긴급 알림
+URGENT_MAGNITUDE    = 4.5   # M4.5 이상에서 긴급 알림
+DAILY_MIN_SCALE     = 20    # 진도2 이상을 일간 요약에 포함
+DAILY_MIN_MAGNITUDE = 3.0   # M3.0 이상을 일간 요약에 포함
 
-# 東京・南青山周辺の都道府県 (地震点フィルタ用)
+# 도쿄·아오야마 인근 광역 (지진 관측점 필터용)
 TOKYO_AREA_PREFS = ["東京都", "神奈川県", "埼玉県", "千葉県"]
 
 
-# ── ユーティリティ ────────────────────────────────────
+# ── 유틸리티 ──────────────────────────────────────────
 
 def fetch_json(url: str) -> list | dict | None:
-    """JSON取得。失敗時はNoneを返す。"""
+    """JSON 취득. 실패 시 None 반환."""
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "disaster-monitor/1.0"})
         with urllib.request.urlopen(req, timeout=15) as res:
             return json.loads(res.read().decode("utf-8"))
     except Exception as e:
-        print(f"[WARN] fetch_json失敗: {url} → {e}", file=sys.stderr)
+        print(f"[WARN] fetch_json 실패: {url} → {e}", file=sys.stderr)
         return None
 
 
 def fetch_xml_text(url: str) -> str | None:
-    """XMLテキスト取得。失敗時はNoneを返す。"""
+    """XML 텍스트 취득. 실패 시 None 반환."""
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "disaster-monitor/1.0"})
         with urllib.request.urlopen(req, timeout=20) as res:
             return res.read().decode("utf-8")
     except Exception as e:
-        print(f"[WARN] fetch_xml失敗: {url} → {e}", file=sys.stderr)
+        print(f"[WARN] fetch_xml 실패: {url} → {e}", file=sys.stderr)
         return None
 
 
 def post_to_slack(webhook_url: str, message: str) -> None:
-    """Slack Workflow Builder Webhookに送信。
-    Workflow Builder側の変数名: message (テキスト型)
+    """Slack Workflow Builder 웹훅으로 전송.
+    Workflow Builder 변수명: message (텍스트 타입)
     """
     payload = {"message": message}
     data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
@@ -90,35 +87,35 @@ def post_to_slack(webhook_url: str, message: str) -> None:
     )
     with urllib.request.urlopen(req, timeout=10) as res:
         if res.status != 200:
-            raise RuntimeError(f"Slack webhook error: {res.status}")
-    print("[OK] Slack送信完了")
+            raise RuntimeError(f"Slack 웹훅 오류: {res.status}")
+    print("[OK] Slack 전송 완료")
 
 
 def scale_to_shindo(scale: int) -> str:
-    """P2PQuake maxScale → JMA震度表記"""
+    """P2PQuake maxScale → 한국어 진도 표기"""
     table = {
-        10: "震度1", 20: "震度2", 30: "震度3", 40: "震度4",
-        45: "震度5弱", 50: "震度5強", 55: "震度6弱", 60: "震度6強", 70: "震度7",
-        -1: "不明",
+        10: "진도1", 20: "진도2", 30: "진도3", 40: "진도4",
+        45: "진도5약", 50: "진도5강", 55: "진도6약", 60: "진도6강", 70: "진도7",
+        -1: "불명",
     }
-    return table.get(scale, f"震度?({scale})")
+    return table.get(scale, f"진도?({scale})")
 
 
 def tsunami_grade_label(grade: str) -> str:
-    """津波予報グレード → 表示ラベル"""
+    """쓰나미 예보 등급 → 한국어 라벨"""
     labels = {
-        "MajorWarning": "🚨 大津波警報",
-        "Warning":      "⚠️ 津波警報",
-        "Watch":        "🔔 津波注意報",
-        "Unknown":      "情報なし",
-        "None":         "津波の心配なし",
+        "MajorWarning": "🚨 대쓰나미경보",
+        "Warning":      "⚠️ 쓰나미경보",
+        "Watch":        "🔔 쓰나미주의보",
+        "Unknown":      "정보없음",
+        "None":         "쓰나미 우려 없음",
     }
     return labels.get(grade, grade)
 
 
 def is_within_hours(time_str: str, hours: float) -> bool:
-    """P2PQuake の time フィールド (JST 'YYYY/MM/DD HH:MM:SS') が
-    現在時刻から指定時間以内かをチェック"""
+    """P2PQuake time 필드 (JST 'YYYY/MM/DD HH:MM:SS')가
+    현재 시각으로부터 지정 시간 이내인지 확인"""
     try:
         dt = datetime.strptime(time_str, "%Y/%m/%d %H:%M:%S")
         dt_jst = dt.replace(tzinfo=JST)
@@ -128,27 +125,27 @@ def is_within_hours(time_str: str, hours: float) -> bool:
         return False
 
 
-# ── 地震情報処理 ──────────────────────────────────────
+# ── 지진 정보 처리 ────────────────────────────────────
 
 def format_quake(q: dict, include_points: bool = False) -> str:
-    """地震1件をSlack表示用にフォーマット"""
+    """지진 1건을 Slack 표시용으로 포맷"""
     eq  = q.get("earthquake", {})
     hyp = eq.get("hypocenter", {})
-    name      = hyp.get("name", "不明")
+    name      = hyp.get("name", "불명")
     magnitude = hyp.get("magnitude", -1)
     depth     = hyp.get("depth", -1)
     max_scale = eq.get("maxScale", -1)
     tsunami   = eq.get("domesticTsunami", "Unknown")
     time_str  = eq.get("time", "")
 
-    mag_str  = f"M{magnitude}" if magnitude != -1 else "M不明"
-    dep_str  = "ごく浅い" if depth == 0 else f"深さ{depth}km" if depth > 0 else "深さ不明"
+    mag_str  = f"M{magnitude}" if magnitude != -1 else "M불명"
+    dep_str  = "극천발" if depth == 0 else f"깊이 {depth}km" if depth > 0 else "깊이 불명"
     shindo   = scale_to_shindo(max_scale)
     tsun_str = tsunami_grade_label(tsunami)
 
-    line = f"• {time_str}  {name}  {mag_str} / {dep_str} / 最大{shindo}  {tsun_str}"
+    line = f"• {time_str}  {name}  {mag_str} / {dep_str} / 최대 {shindo}  {tsun_str}"
 
-    # 東京周辺の観測点があれば追記
+    # 도쿄 인근 관측점이 있으면 추가
     if include_points:
         points = q.get("points", [])
         tokyo_pts = [
@@ -160,15 +157,15 @@ def format_quake(q: dict, include_points: bool = False) -> str:
                 f"{p.get('addr','?')}:{scale_to_shindo(p.get('scale',-1))}"
                 for p in tokyo_pts[:3]
             ]
-            line += f"\n  └ 東京周辺: {', '.join(p_strs)}"
+            line += f"\n  └ 도쿄 인근: {', '.join(p_strs)}"
 
     return line
 
 
-# ── 津波情報処理 ──────────────────────────────────────
+# ── 쓰나미 정보 처리 ──────────────────────────────────
 
 def get_active_tsunami() -> list[dict]:
-    """現在有効な津波警報・注意報を取得"""
+    """현재 유효한 쓰나미 경보·주의보 취득"""
     data = fetch_json(TSUNAMI_API)
     if not data:
         return []
@@ -181,7 +178,6 @@ def get_active_tsunami() -> list[dict]:
         if not is_within_hours(issue_time, 24):
             continue
         areas = item.get("areas", [])
-        # 警報・注意報レベル以上のみ
         serious = [
             a for a in areas
             if a.get("grade") in ("MajorWarning", "Warning", "Watch")
@@ -192,57 +188,51 @@ def get_active_tsunami() -> list[dict]:
     return active
 
 
-# ── 台風・大雨情報処理 (気象庁 JMAXML フィード) ─────────
+# ── 태풍·대우 정보 처리 (기상청 JMAXML 피드) ──────────
 
 def parse_jma_feed(feed_url: str, hours: int = 24) -> dict:
     """
-    気象庁 Atom フィードをパースして
+    기상청 Atom 피드를 파싱해서
     {
-      'typhoons': [タイトル文字列, ...],
-      'heavy_rain_warnings': [タイトル文字列, ...],
+      'typhoons': [제목 문자열, ...],
+      'heavy_rain_warnings': [제목 문자열, ...],
     }
-    を返す。
-    台風情報タイトル例: '台風第6号に関する情報'
-    特別警報タイトル例: '気象特別警報・警報・注意報'
+    반환.
     """
     xml_str = fetch_xml_text(feed_url)
     if not xml_str:
         return {"typhoons": [], "heavy_rain_warnings": []}
 
-    # Atom エントリを正規表現で抽出 (XML名前空間の問題を避けるため)
     entries = re.findall(r'<entry>(.*?)</entry>', xml_str, re.DOTALL)
 
     now_jst = datetime.now(JST)
-    typhoons     = []
-    heavy_rain   = []
+    typhoons   = []
+    heavy_rain = []
 
     for entry in entries:
-        # 更新時刻チェック
+        # 갱신 시각 확인
         m_updated = re.search(r'<updated>(.*?)</updated>', entry)
         if m_updated:
             try:
-                # "2026-06-03T10:00:00+09:00" 形式
                 updated_str = m_updated.group(1).strip()
-                # タイムゾーン付き日時パース
                 updated_str_clean = re.sub(r'([+-]\d{2}):(\d{2})$', r'\1\2', updated_str)
                 dt = datetime.strptime(updated_str_clean, "%Y-%m-%dT%H:%M:%S%z")
                 if (now_jst - dt) > timedelta(hours=hours):
-                    continue  # 古いエントリはスキップ
+                    continue
             except Exception:
-                pass  # パース失敗時はスキップしない (安全側)
+                pass
 
-        # タイトル取得
         m_title = re.search(r'<title>(.*?)</title>', entry)
         if not m_title:
             continue
         title = m_title.group(1).strip()
 
-        # 台風情報 (VTUP): '台風第N号に関する情報' / '台風情報'
+        # 태풍 정보
         if re.search(r'台風|熱帯低気圧', title):
             if title not in typhoons:
                 typhoons.append(title)
 
-        # 大雨・洪水 特別警報 (level5相当)
+        # 대우·홍수 특별경보
         if re.search(r'大雨特別警報|洪水特別警報|氾濫特別警報', title):
             if title not in heavy_rain:
                 heavy_rain.append(title)
@@ -253,16 +243,19 @@ def parse_jma_feed(feed_url: str, hours: int = 24) -> dict:
     }
 
 
-# ── モード別メイン処理 ────────────────────────────────
+# ── 모드별 메인 처리 ──────────────────────────────────
 
 def run_daily(webhook_url: str) -> None:
-    """毎日定時サマリー: 前24時間の地震 + 津波 + 台風 + 大雨特別警報"""
+    """매일 정시 요약: 전24시간 지진 + 쓰나미 + 태풍 + 대우특별경보"""
     now_jst  = datetime.now(JST)
-    date_str = now_jst.strftime("%Y年%-m月%-d日 (%a)")
+    # 요일 한국어
+    weekdays = ["월", "화", "수", "목", "금", "토", "일"]
+    wd = weekdays[now_jst.weekday()]
+    date_str = now_jst.strftime(f"%Y년 %-m월 %-d일 ({wd})")
 
     sections = []
 
-    # ── 地震 ──
+    # ── 지진 ──
     quake_data = fetch_json(QUAKE_API)
     if quake_data:
         recent = []
@@ -277,13 +270,13 @@ def run_daily(webhook_url: str) -> None:
 
         if recent:
             lines = [format_quake(q, include_points=True) for q in recent[:10]]
-            sections.append("*🗾 過去24時間の地震*\n" + "\n".join(lines))
+            sections.append("*🗾 지난 24시간 지진*\n" + "\n".join(lines))
         else:
-            sections.append("*🗾 過去24時間の地震*\n• 震度2以上・M3.0以上の地震はありませんでした")
+            sections.append("*🗾 지난 24시간 지진*\n• 진도2 이상 · M3.0 이상 지진 없음")
     else:
-        sections.append("*🗾 過去24時間の地震*\n• データ取得失敗")
+        sections.append("*🗾 지난 24시간 지진*\n• 데이터 취득 실패")
 
-    # ── 津波 ──
+    # ── 쓰나미 ──
     tsunami_list = get_active_tsunami()
     if tsunami_list:
         t_lines = []
@@ -292,31 +285,31 @@ def run_daily(webhook_url: str) -> None:
                 grade = tsunami_grade_label(area.get("grade", ""))
                 name  = area.get("name", "")
                 t_lines.append(f"• {name}: {grade}")
-        sections.append("*🌊 津波情報*\n" + "\n".join(t_lines))
+        sections.append("*🌊 쓰나미 정보*\n" + "\n".join(t_lines))
 
-    # ── 台風・大雨 (extra.xml 24h) ──
+    # ── 태풍 ──
     feed_info = parse_jma_feed(JMA_FEED_EXTRA, hours=24)
 
     if feed_info["typhoons"]:
         t_lines = [f"• {t}" for t in feed_info["typhoons"]]
-        sections.append("*🌀 台風情報*\n" + "\n".join(t_lines))
+        sections.append("*🌀 태풍 정보*\n" + "\n".join(t_lines))
     else:
-        sections.append("*🌀 台風情報*\n• 現在、活動中の台風はありません")
+        sections.append("*🌀 태풍 정보*\n• 현재 활동 중인 태풍 없음")
 
     if feed_info["heavy_rain_warnings"]:
         w_lines = [f"• {w}" for w in feed_info["heavy_rain_warnings"]]
-        sections.append("*🌧️ 大雨特別警報*\n" + "\n".join(w_lines))
+        sections.append("*🌧️ 대우 특별경보*\n" + "\n".join(w_lines))
 
-    # ── 組み立て & 送信 ──
-    body = f"*📡 日本防災情報 日次サマリー — {date_str}*\n\n" + "\n\n".join(sections)
+    # ── 조합 & 전송 ──
+    body = f"*📡 일본 방재정보 일간 요약 — {date_str}*\n\n" + "\n\n".join(sections)
     post_to_slack(webhook_url, body)
 
 
 def run_urgent(webhook_url: str) -> None:
-    """緊急監視: 閾値超えた場合のみ送信。何もなければ無音。"""
+    """긴급 감시: 임계값 초과 시만 전송. 이하면 무음."""
     alerts = []
 
-    # ── 地震: 直近30分 ──
+    # ── 지진: 직전 30분 ──
     quake_data = fetch_json(QUAKE_API)
     if quake_data:
         for q in quake_data:
@@ -325,7 +318,7 @@ def run_urgent(webhook_url: str) -> None:
             mag     = q.get("earthquake", {}).get("hypocenter", {}).get("magnitude", -1)
             tsunami = q.get("earthquake", {}).get("domesticTsunami", "None")
 
-            if not is_within_hours(t, 0.5):  # 30分以内
+            if not is_within_hours(t, 0.5):
                 continue
 
             is_large    = isinstance(mag, (int, float)) and mag >= URGENT_MAGNITUDE
@@ -333,9 +326,9 @@ def run_urgent(webhook_url: str) -> None:
             has_tsunami = tsunami in ("MajorWarning", "Warning", "Watch")
 
             if is_large or is_strong or has_tsunami:
-                alerts.append("🚨 *緊急地震情報*\n" + format_quake(q, include_points=True))
+                alerts.append("🚨 *긴급 지진 정보*\n" + format_quake(q, include_points=True))
 
-    # ── 津波警報 ──
+    # ── 쓰나미 경보 ──
     tsunami_list = get_active_tsunami()
     if tsunami_list:
         for t in tsunami_list:
@@ -345,47 +338,47 @@ def run_urgent(webhook_url: str) -> None:
                     f"• {a.get('name','?')}: {tsunami_grade_label(a.get('grade',''))}"
                     for a in major[:5]
                 ]
-                alerts.append("🚨 *津波警報発令中*\n" + "\n".join(lines))
+                alerts.append("🚨 *쓰나미 경보 발령 중*\n" + "\n".join(lines))
 
-    # ── 台風・大雨特別警報: 直近1時間の新規情報 ──
+    # ── 태풍·대우특별경보: 직전 1시간 신규 정보 ──
     feed_info = parse_jma_feed(JMA_FEED_EXTRA, hours=1)
 
     if feed_info["typhoons"]:
         t_lines = [f"• {t}" for t in feed_info["typhoons"]]
-        alerts.append("🌀 *台風情報 (新着)*\n" + "\n".join(t_lines))
+        alerts.append("🌀 *태풍 정보 (신규)*\n" + "\n".join(t_lines))
 
     if feed_info["heavy_rain_warnings"]:
         w_lines = [f"• {w}" for w in feed_info["heavy_rain_warnings"]]
-        alerts.append("🚨 *大雨特別警報 発令中*\n" + "\n".join(w_lines))
+        alerts.append("🚨 *대우 특별경보 발령 중*\n" + "\n".join(w_lines))
 
     if not alerts:
-        print("[OK] 緊急アラートなし — 送信スキップ")
+        print("[OK] 긴급 알림 없음 — 전송 스킵")
         return
 
     now_jst  = datetime.now(JST)
     time_str = now_jst.strftime("%m/%d %H:%M JST")
-    body = f"*⚠️ 自動災害アラート ({time_str})*\n\n" + "\n\n".join(alerts)
+    body = f"*⚠️ 자동 재해 알림 ({time_str})*\n\n" + "\n\n".join(alerts)
     post_to_slack(webhook_url, body)
 
 
-# ── エントリポイント ──────────────────────────────────
+# ── 진입점 ────────────────────────────────────────────
 
 def main():
     webhook_url = os.environ.get("SLACK_WEBHOOK_URL", "")
     mode        = os.environ.get("MONITOR_MODE", "daily").lower()
 
     if not webhook_url:
-        print("[ERROR] SLACK_WEBHOOK_URL が設定されていません", file=sys.stderr)
+        print("[ERROR] SLACK_WEBHOOK_URL 이 설정되지 않았습니다", file=sys.stderr)
         sys.exit(1)
 
     if mode == "daily":
-        print(f"[INFO] 日次サマリーモード ({datetime.now(JST).strftime('%Y/%m/%d %H:%M JST')})")
+        print(f"[INFO] 일간 요약 모드 ({datetime.now(JST).strftime('%Y/%m/%d %H:%M JST')})")
         run_daily(webhook_url)
     elif mode == "urgent":
-        print(f"[INFO] 緊急監視モード ({datetime.now(JST).strftime('%Y/%m/%d %H:%M JST')})")
+        print(f"[INFO] 긴급 감시 모드 ({datetime.now(JST).strftime('%Y/%m/%d %H:%M JST')})")
         run_urgent(webhook_url)
     else:
-        print(f"[ERROR] 不明なMONITOR_MODE: {mode}", file=sys.stderr)
+        print(f"[ERROR] 알 수 없는 MONITOR_MODE: {mode}", file=sys.stderr)
         sys.exit(1)
 
 
