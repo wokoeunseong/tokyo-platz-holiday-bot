@@ -35,6 +35,10 @@ import urllib.request
 import urllib.error
 from datetime import datetime, timezone, timedelta
 
+# 같은 폴더(scripts/)의 store_impact 를 어떤 실행 위치(CWD)에서도 import 할 수 있게 보장.
+# GitHub Actions 가 루트에서 실행하든 scripts 에서 실행하든 동일하게 동작.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 # store_impact.py 의 판정 엔진·상수를 가져온다 (같은 폴더에 두 파일을 둘 것)
 from store_impact import (
     Earthquake, Typhoon, judge_level,
@@ -539,8 +543,13 @@ def run_daily(webhook_url: str) -> None:
         sections.append("*🌧️ 대우 특별경보*\n" + "\n".join(w_lines))
 
     # ── 조합 & 전송 ──
-    # [추가] 맨 위에 매장 영향도 헤더를 얹는다 (지진 윈도우 24h)
-    header = build_store_header(quake_data or [], 24, now_jst)
+    # [추가] 맨 위에 매장 영향도 헤더를 얹는다 (지진 윈도우 24h).
+    # 헤더 생성이 어떤 이유로 실패해도 기존 요약은 정상 전송되도록 방어.
+    try:
+        header = build_store_header(quake_data or [], 24, now_jst)
+    except Exception as e:
+        print(f"[WARN] 매장 헤더 생성 실패 → {e}", file=sys.stderr)
+        header = ""
     body = (header
             + f"*📡 일본 방재정보 일간 요약 — {date_str}*\n\n"
             + "\n\n".join(sections))
@@ -599,8 +608,13 @@ def run_urgent(webhook_url: str) -> None:
 
     now_jst  = datetime.now(JST)
     time_str = now_jst.strftime("%m/%d %H:%M JST")
-    # [추가] 긴급 메시지에도 매장 영향도 헤더를 얹는다 (지진 윈도우 1h)
-    header = build_store_header(quake_data or [], 1, now_jst)
+    # [추가] 긴급 메시지에도 매장 영향도 헤더를 얹는다 (지진 윈도우 1h).
+    # 헤더 생성 실패해도 긴급 알림 본문은 정상 전송되도록 방어.
+    try:
+        header = build_store_header(quake_data or [], 1, now_jst)
+    except Exception as e:
+        print(f"[WARN] 매장 헤더 생성 실패 → {e}", file=sys.stderr)
+        header = ""
     body = (header
             + f"*⚠️ 자동 재해 알림 ({time_str})*\n\n"
             + "\n\n".join(alerts))
