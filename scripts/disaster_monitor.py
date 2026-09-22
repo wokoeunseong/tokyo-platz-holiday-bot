@@ -7,7 +7,7 @@ disaster_monitor.py
   - 지진 (P2PQuake JSON API v2)
   - 쓰나미 (P2PQuake JSON API v2)
   - 태풍 (기상청 JMAXML 피드)
-  - 대우 특별경보 (기상청 JMAXML 피드)
+  - 호우 특별경보 (기상청 JMAXML 피드)
 
 동작 모드 (환경변수 MONITOR_MODE):
   - "daily"  : 매일 정시 요약 (전24시간 지진 + 태풍 현황)
@@ -111,6 +111,7 @@ def post_to_slack(webhook_url: str, message: str) -> None:
     """Slack Workflow Builder 웹훅으로 전송.
     Workflow Builder 변수명: message (텍스트 타입)
     """
+    message = jp_ko.korean_only(message).replace("*", "").replace("JST", "일본 시간")
     payload = {"message": message}
     data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     req = urllib.request.Request(
@@ -156,7 +157,7 @@ def is_within_hours(time_str: str, hours: float) -> bool:
         dt = datetime.strptime(time_str, "%Y/%m/%d %H:%M:%S")
         dt_jst = dt.replace(tzinfo=JST)
         now_jst = datetime.now(JST)
-        return (now_jst - dt_jst) <= timedelta(hours=hours)
+        return timedelta(0) <= (now_jst - dt_jst) <= timedelta(hours=hours)
     except Exception:
         return False
 
@@ -345,29 +346,50 @@ def build_store_header(quake_list: list, window_hours: float, base: datetime) ->
     매장 영향도 2줄 헤더 + 구분선 생성.
     (판정은 store_impact.judge_level 사용 — 단일 소스)
     """
-    eq_main, _ = build_earthquake(quake_list, window_hours)
-    typhoon = assess_typhoon()
-    overall, eq_lv, ty_lv, driver = judge_level(eq_main, typhoon)
-    win = typhoon.closest_label if typhoon else ""
-
-    # 헤드라인 (store_impact.build_slack_message 와 동일 규칙)
-    from store_impact import GREEN, YELLOW, RED
-    if overall == RED:
-        head = HEADLINE[RED]
-    elif overall == YELLOW:
-        head = (HEADLINE["ty_yellow"].format(win=win)
-                if driver == "typhoon" else HEADLINE["eq_yellow"])
-    else:
-        head = HEADLINE[GREEN]
-
-    eq_short = EQ_SHORT[eq_lv]
-    ty_short = TY_SHORT[ty_lv].format(win=win) if typhoon else TY_SHORT[GREEN]
-
+    recent = [q for q in quake_list
+              if is_within_hours(q.get("earthquake", {}).get("time", ""), window_hours)]
+    scales = [_store_ward_scale(q.get("points", [])) for q in recent]
+    scale = max(scales, default=-1)
+    observed = (f"수신 관측 중 도쿄 도심 최대 {scale_to_shindo(scale)}"
+                if scale >= 0 else "수신 자료에서 도쿄 도심 진도를 확인하지 못했습니다.")
     return (
-        f"*{EMOJI[overall]} {STORE_LABEL} 영향도 — {head}*\n"
-        f"{WARD_LABEL} · 지진 {EMOJI[eq_lv]} {eq_short} · 태풍 {EMOJI[ty_lv]} {ty_short}\n"
+        f"📍 {STORE_LABEL} 참고 정보\n"
+        f"{WARD_LABEL}\n"
+        f"• {observed}\n"
+        "• 자료 누락 가능성이 있으며 실제 매장 피해 여부를 판정한 정보는 아닙니다.\n"
         f"{DIVIDER}\n"
     )
+
+
+def unique_quakes(quakes: list) -> list:
+    """동일 발생시각·진앙의 후속 발표를 병합하고 완전한 관측 정보를 우선한다."""
+    import copy
+    named_times = {q.get("earthquake", {}).get("time") for q in quakes
+                   if q.get("earthquake", {}).get("hypocenter", {}).get("name")}
+    groups = {}
+    for original in quakes:
+        q = copy.deepcopy(original)
+        eq = q.get("earthquake", {})
+        hyp = eq.get("hypocenter", {})
+        when, name = eq.get("time", ""), hyp.get("name", "")
+        if not name and when in named_times:
+            continue
+        key = (when, name)
+        if key not in groups:
+            groups[key] = q
+            continue
+        saved = groups[key]
+        se = saved["earthquake"]
+        # 정정치의 순서는 API의 최신순을 유지. 누락값만 후속 자료로 보완한다.
+        if se.get("maxScale", -1) in (-1, None):
+            se["maxScale"] = eq.get("maxScale", -1)
+        sh = se.setdefault("hypocenter", {})
+        for field, value in hyp.items():
+            if sh.get(field) in (None, "", -1):
+                sh[field] = value
+        if not saved.get("points") and q.get("points"):
+            saved["points"] = q["points"]
+    return list(groups.values())
 
 
 # ── 지진 정보 처리 ────────────────────────────────────
@@ -376,14 +398,14 @@ def format_quake(q: dict, include_points: bool = False) -> str:
     """지진 1건을 Slack 표시용으로 포맷"""
     eq  = q.get("earthquake", {})
     hyp = eq.get("hypocenter", {})
-    name      = jp_ko.ko_place(hyp.get("name", "불명"))
+    name      = jp_ko.ko_place(hyp.get("name", "") or "진앙 확인 중")
     magnitude = hyp.get("magnitude", -1)
     depth     = hyp.get("depth", -1)
     max_scale = eq.get("maxScale", -1)
     tsunami   = eq.get("domesticTsunami", "Unknown")
     time_str  = eq.get("time", "")
 
-    mag_str  = f"M{magnitude}" if magnitude != -1 else "M불명"
+    mag_str  = f"규모 {magnitude}" if magnitude not in (-1, None) else "규모 확인 중"
     dep_str  = "극천발" if depth == 0 else f"깊이 {depth}km" if depth > 0 else "깊이 불명"
     shindo   = scale_to_shindo(max_scale)
     tsun_str = tsunami_grade_label(tsunami)
@@ -491,7 +513,7 @@ def parse_jma_feed(feed_url: str, hours: int = 24) -> dict:
 # ── 모드별 메인 처리 ──────────────────────────────────
 
 def run_daily(webhook_url: str) -> None:
-    """매일 정시 요약: 전24시간 지진 + 쓰나미 + 태풍 + 대우특별경보"""
+    """매일 정시 요약: 전24시간 지진 + 쓰나미 + 태풍 + 호우특별경보"""
     now_jst  = datetime.now(JST)
     # 요일 한국어
     weekdays = ["월", "화", "수", "목", "금", "토", "일"]
@@ -502,6 +524,8 @@ def run_daily(webhook_url: str) -> None:
 
     # ── 지진 ──
     quake_data = fetch_json(QUAKE_API)
+    if quake_data:
+        quake_data = unique_quakes(quake_data)
     if quake_data:
         recent = []
         for q in quake_data:
@@ -514,7 +538,14 @@ def run_daily(webhook_url: str) -> None:
                 recent.append(q)
 
         if recent:
-            lines = [format_quake(q, include_points=True) for q in recent[:10]]
+            recent.sort(key=lambda q: (
+                _store_ward_scale(q.get("points", [])) >= 0,
+                q.get("earthquake", {}).get("maxScale", -1) or -1,
+                q.get("earthquake", {}).get("hypocenter", {}).get("magnitude", -1) or -1,
+            ), reverse=True)
+            lines = [format_quake(q, include_points=True) for q in recent[:5]]
+            if len(recent) > 5:
+                lines.append(f"• 그 외 수신 지진 {len(recent)-5}건")
             sections.append("*🗾 지난 24시간 지진*\n" + "\n".join(lines))
         else:
             sections.append("*🗾 지난 24시간 지진*\n• 진도2 이상 · M3.0 이상 지진 없음")
@@ -528,7 +559,7 @@ def run_daily(webhook_url: str) -> None:
         for t in tsunami_list:
             for area in t["areas"][:5]:
                 grade = tsunami_grade_label(area.get("grade", ""))
-                name  = area.get("name", "")
+                name  = jp_ko.ko_place(area.get("name", ""))
                 t_lines.append(f"• {name}: {grade}")
         sections.append("*🌊 쓰나미 정보*\n" + "\n".join(t_lines))
 
@@ -537,13 +568,14 @@ def run_daily(webhook_url: str) -> None:
 
     if feed_info["typhoons"]:
         t_lines = [f"• {jp_ko.ko_title(t)}" for t in feed_info["typhoons"]]
+        t_lines.append("• 발표 제목만으로 도쿄 접근 여부를 판단할 수 없습니다.")
         sections.append("*🌀 태풍 정보*\n" + "\n".join(t_lines))
     else:
-        sections.append("*🌀 태풍 정보*\n• 현재 활동 중인 태풍 없음")
+        sections.append("*🌀 태풍 정보*\n• 최근 24시간 피드에서 태풍 관련 발표를 확인하지 못했습니다.")
 
     if feed_info["heavy_rain_warnings"]:
         w_lines = [f"• {jp_ko.ko_title(w)}" for w in feed_info["heavy_rain_warnings"]]
-        sections.append("*🌧️ 대우 특별경보*\n" + "\n".join(w_lines))
+        sections.append("*🌧️ 호우 특별경보*\n" + "\n".join(w_lines))
 
     # ── 조합 & 전송 ──
     # [추가] 맨 위에 매장 영향도 헤더를 얹는다 (지진 윈도우 24h).
@@ -556,6 +588,7 @@ def run_daily(webhook_url: str) -> None:
     body = (header
             + f"*📡 일본 방재정보 일간 요약 — {date_str}*\n\n"
             + "\n\n".join(sections))
+    body += "\n\n※ 같은 지진의 속보·후속 발표는 한 건으로 정리했습니다.\n일본 기상청 최신 정보: https://www.jma.go.jp/bosai/"
     post_to_slack(webhook_url, body)
 
 
@@ -565,6 +598,8 @@ def run_urgent(webhook_url: str) -> None:
 
     # ── 지진: 직전 30분 ──
     quake_data = fetch_json(QUAKE_API)
+    if quake_data:
+        quake_data = unique_quakes(quake_data)
     if quake_data:
         for q in quake_data:
             t       = q.get("earthquake", {}).get("time", "")
@@ -589,21 +624,22 @@ def run_urgent(webhook_url: str) -> None:
             major = [a for a in t["areas"] if a.get("grade") in ("MajorWarning", "Warning")]
             if major:
                 lines = [
-                    f"• {a.get('name','?')}: {tsunami_grade_label(a.get('grade',''))}"
+                    f"• {jp_ko.ko_place(a.get('name','지역 확인 중'))}: {tsunami_grade_label(a.get('grade',''))}"
                     for a in major[:5]
                 ]
                 alerts.append("🚨 *쓰나미 경보 발령 중*\n" + "\n".join(lines))
 
-    # ── 태풍·대우특별경보: 직전 1시간 신규 정보 ──
+    # ── 태풍·호우특별경보: 직전 1시간 신규 정보 ──
     feed_info = parse_jma_feed(JMA_FEED_EXTRA, hours=1)
 
     if feed_info["typhoons"]:
         t_lines = [f"• {jp_ko.ko_title(t)}" for t in feed_info["typhoons"]]
+        t_lines.append("• 발표 제목만으로 도쿄 접근 여부를 판단할 수 없습니다.")
         alerts.append("🌀 *태풍 정보 (신규)*\n" + "\n".join(t_lines))
 
     if feed_info["heavy_rain_warnings"]:
         w_lines = [f"• {jp_ko.ko_title(w)}" for w in feed_info["heavy_rain_warnings"]]
-        alerts.append("🚨 *대우 특별경보 발령 중*\n" + "\n".join(w_lines))
+        alerts.append("🚨 *호우 특별경보 발령 중*\n" + "\n".join(w_lines))
 
     if not alerts:
         print("[OK] 긴급 알림 없음 — 전송 스킵")
@@ -621,6 +657,7 @@ def run_urgent(webhook_url: str) -> None:
     body = (header
             + f"*⚠️ 자동 재해 알림 ({time_str})*\n\n"
             + "\n\n".join(alerts))
+    body += "\n\n※ 같은 지진의 속보·후속 발표는 한 건으로 정리했습니다.\n일본 기상청 최신 정보: https://www.jma.go.jp/bosai/"
     post_to_slack(webhook_url, body)
 
 
@@ -648,3 +685,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
