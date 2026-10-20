@@ -1,27 +1,10 @@
-name: Japan Disaster Monitor
-
+name: Japan Disaster Monitor (retired)
 on:
-  # 매일 한국·일본 시간 오전 8시 (전날 UTC 23시)
-  schedule:
-    - cron: "0 23 * * *"
-
-  # 필요한 경우 일간 요약만 수동 실행
   workflow_dispatch:
-
+permissions:
+  contents: read
 jobs:
-  daily-summary:
+  retired:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Run daily summary
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          MONITOR_MODE: daily
-        run: python scripts/disaster_monitor.py
+      - run: echo "Earthquake and routine disaster messages are disabled. Japan-impact typhoons are included in the morning briefing."

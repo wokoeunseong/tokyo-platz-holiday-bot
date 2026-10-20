@@ -1,23 +1,36 @@
 name: Japan Holiday Check
-
 on:
   schedule:
-    - cron: '0 17 * * *'
+    - cron: '0 23 * * *' # 08:00 JST/KST; GitHub may delay scheduled runs.
   workflow_dispatch:
-
+    inputs:
+      dry_run:
+        description: 'Preview only (no Slack message)'
+        type: boolean
+        default: true
+permissions:
+  contents: read
+concurrency:
+  group: japan-morning-briefing
+  cancel-in-progress: false
 jobs:
   holiday-check:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-
-      - name: Run holiday check
+      - name: Verify briefing behavior
+        run: python -m unittest discover -s scripts -p 'test_*.py'
+      - name: Preview or send morning briefing
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        run: python scripts/jp_holiday_check.py
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then
+            python scripts/daily_briefing.py --dry-run
+          else
+            python scripts/daily_briefing.py
+          fi
