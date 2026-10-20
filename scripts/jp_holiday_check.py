@@ -132,25 +132,7 @@ def post_to_slack(webhook_url, message):
             raise RuntimeError(f"웹훅 응답 오류: {res.status}")
 
 def main():
-    webhook_url=os.environ.get('SLACK_WEBHOOK_URL','').strip()
-    if not webhook_url:
-        print('ERROR: SLACK_WEBHOOK_URL 없음',file=sys.stderr); sys.exit(1)
-    today=get_today_jst()
-    try:
-        holidays=fetch_holidays()
-    except Exception as e:
-        print(f'WARNING: 공휴일 API 실패: {type(e).__name__}',file=sys.stderr)
-        holidays=None
-    try:
-        weather=fetch_weather()
-    except Exception as e:
-        print(f'WARNING: 날씨 API 실패: {type(e).__name__}',file=sys.stderr)
-        weather='🌤 오늘·내일 날씨: 확인 불가 (날씨 제공처 응답 오류)'
-    message=build_message(today,check_holiday(today,holidays or {}),weather,holidays)
-    try:
-        post_to_slack(webhook_url,message)
-    except Exception as e:
-        print(f'ERROR: Slack 전송 실패: {type(e).__name__}',file=sys.stderr); sys.exit(1)
-    print(f'[{today}] 한국어 날씨·공휴일 브리핑 전송 완료')
+    from daily_briefing import main as daily_main
+    daily_main()
 
 if __name__=='__main__': main()

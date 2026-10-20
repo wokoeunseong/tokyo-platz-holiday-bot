@@ -664,23 +664,9 @@ def run_urgent(webhook_url: str) -> None:
 # ── 진입점 ────────────────────────────────────────────
 
 def main():
-    print("[INFO] ===== disaster_monitor.py 시작 =====")  # 실행 파일 식별용 마커
-    webhook_url = os.environ.get("SLACK_WEBHOOK_URL", "")
-    mode        = os.environ.get("MONITOR_MODE", "daily").lower()
-
-    if not webhook_url:
-        print("[ERROR] SLACK_WEBHOOK_URL 이 설정되지 않았습니다", file=sys.stderr)
-        sys.exit(1)
-
-    if mode == "daily":
-        print(f"[INFO] 일간 요약 모드 ({datetime.now(JST).strftime('%Y/%m/%d %H:%M JST')})")
-        run_daily(webhook_url)
-    elif mode == "urgent":
-        print(f"[INFO] 긴급 감시 모드 ({datetime.now(JST).strftime('%Y/%m/%d %H:%M JST')})")
-        run_urgent(webhook_url)
-    else:
-        print(f"[ERROR] 알 수 없는 MONITOR_MODE: {mode}", file=sys.stderr)
-        sys.exit(1)
+    # Retired: manual invocations must not send earthquake summaries either.
+    # Conditional Japan-impact typhoons are part of daily_briefing.py.
+    print("[INFO] 지진·재해 정기 요약 중단 — 발송하지 않습니다.")
 
 
 if __name__ == "__main__":
