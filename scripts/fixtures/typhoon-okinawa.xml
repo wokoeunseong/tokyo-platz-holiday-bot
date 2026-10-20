@@ -1,0 +1,353 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Report xmlns="http://xml.kishou.go.jp/jmaxml1/" xmlns:jmx_add="http://xml.kishou.go.jp/jmaxml1/addition1/" xmlns:jmx="http://xml.kishou.go.jp/jmaxml1/">
+<Control>
+<Title>地方気象解説情報</Title>
+<DateTime>2026-10-20T07:26:39Z</DateTime>
+<Status>通常</Status>
+<EditorialOffice>沖縄気象台</EditorialOffice>
+<PublishingOffice>沖縄気象台</PublishingOffice>
+</Control>
+<Head xmlns="http://xml.kishou.go.jp/jmaxml1/informationBasis1/">
+<Title>沖縄地方気象解説情報（台風第３０号）</Title>
+<ReportDateTime>2026-10-20T16:26:00+09:00</ReportDateTime>
+<TargetDateTime>2026-10-20T16:26:00+09:00</TargetDateTime>
+<EventID>CJPOK260025</EventID>
+<InfoType>発表</InfoType>
+<Serial>5</Serial>
+<InfoKind>気象解説情報</InfoKind>
+<InfoKindVersion>1.5_0</InfoKindVersion>
+<Headline>
+<Text>台風第３０号は、２３日から２４日頃にかけて非常に強い勢力で先島諸島に接近する見込みです。先島諸島では２３日から２４日頃は暴風と警報級の大雨に、沖縄地方では２１日からうねりを伴う高波に警戒してください。先島諸島では２３日から２４日頃は警報級の高潮となるおそれがあります。風が強まる前に早めの台風対策が必要です。</Text>
+<Information type="情報タグ">
+<Item>
+<Kind>
+<Name>情報タグ</Name>
+<Condition>台風 暴風 高波 大雨 高潮 落雷</Condition>
+</Kind>
+<Kind>
+<Name>台風番号</Name>
+<Condition>T2630</Condition>
+</Kind>
+<Kind>
+<Name>TC番号</Name>
+<Condition>TC2636</Condition>
+</Kind>
+<Areas codeType="全国・地方予報区等">
+<Area>
+<Name>沖縄地方</Name>
+<Code>011100</Code>
+</Area>
+</Areas>
+</Item>
+</Information>
+</Headline>
+</Head>
+<Body xmlns="http://xml.kishou.go.jp/jmaxml1/body/meteorology1/" xmlns:jmx_eb="http://xml.kishou.go.jp/jmaxml1/elementBasis1/">
+<MeteorologicalInfos type="概況">
+<MeteorologicalInfo>
+<DateTime>2026-10-20T16:26:00+09:00</DateTime>
+<Item>
+<Kind>
+<Property>
+<Type>気象概況</Type>
+<Text type="本文">大型で非常に強い台風第３０号は、２０日１５時にはフィリピンの東の北緯１６度２５分、東経１３４度３０分にあって、１時間におよそ２０キロの速さで西北西へ進んでいます。中心の気圧は９４５ヘクトパスカル、中心付近の最大風速は５０メートル、最大瞬間風速は７０メートルで中心の北東側２２０キロ以内と南西側１６５キロ以内では風速２５メートル以上の暴風となっています。また、中心の北東側６５０キロ以内と南西側５００キロ以内では風速１５メートル以上の強い風が吹いています。
+
+台風第３０号は、今後フィリピンの東を西北西に進み、２３日から２４日頃にかけて非常に強い勢力で先島諸島に接近する見込みです。</Text>
+</Property>
+</Kind>
+</Item>
+</MeteorologicalInfo>
+</MeteorologicalInfos>
+<MeteorologicalInfos type="予想">
+<TimeSeriesInfo>
+<TimeDefines>
+<TimeDefine timeId="1">
+<DateTime>2026-10-21T00:00:00+09:00</DateTime>
+<Duration>P1D</Duration>
+<Name>２１日</Name>
+</TimeDefine>
+<TimeDefine timeId="2">
+<DateTime>2026-10-22T00:00:00+09:00</DateTime>
+<Duration>P1D</Duration>
+<Name>２２日</Name>
+</TimeDefine>
+</TimeDefines>
+<Item>
+<Kind>
+<Property>
+<Type>風の予想</Type>
+<Text type="解説"/>
+<Text refID="1" type="時系列解説">２１日に予想される風向・最大風速（最大瞬間風速）</Text>
+<Text refID="2" type="時系列解説">２２日に予想される風向・最大風速（最大瞬間風速）</Text>
+<Text type="気象要素">予想される風向・最大風速（最大瞬間風速）</Text>
+</Property>
+</Kind>
+</Item>
+<Item>
+<Kind>
+<Property>
+<Type>風の予想</Type>
+<WindDirectionPart>
+<Base>
+<jmx_eb:WindDirection description="北東" refID="1" type="風向" unit="８方位漢字">北東</jmx_eb:WindDirection>
+<jmx_eb:WindDirection description="北東" refID="2" type="風向" unit="８方位漢字">北東</jmx_eb:WindDirection>
+</Base>
+</WindDirectionPart>
+<WindSpeedPart>
+<Base>
+<jmx_eb:WindSpeed description="１５メートル" refID="1" type="最大風速" unit="m/s">15</jmx_eb:WindSpeed>
+<jmx_eb:WindSpeed description="２５メートル" refID="1" type="最大瞬間風速" unit="m/s">25</jmx_eb:WindSpeed>
+<jmx_eb:WindSpeed description="１７メートル" refID="2" type="最大風速" unit="m/s">17</jmx_eb:WindSpeed>
+<jmx_eb:WindSpeed description="３０メートル" refID="2" type="最大瞬間風速" unit="m/s">30</jmx_eb:WindSpeed>
+</Base>
+</WindSpeedPart>
+</Property>
+</Kind>
+<Area codeType="気象情報／府県予報区・細分区域等">
+<Name>沖縄本島地方</Name>
+<Code>471000</Code>
+<CodeList>471011 471012 471013 471021 471022 471023 471024 471030</CodeList>
+</Area>
+</Item>
+<Item>
+<Kind>
+<Property>
+<Type>風の予想</Type>
+<WindDirectionPart>
+<Base>
+<jmx_eb:WindDirection description="北東" refID="1" type="風向" unit="８方位漢字">北東</jmx_eb:WindDirection>
+<jmx_eb:WindDirection description="北東" refID="2" type="風向" unit="８方位漢字">北東</jmx_eb:WindDirection>
+</Base>
+</WindDirectionPart>
+<WindSpeedPart>
+<Base>
+<jmx_eb:WindSpeed description="１８メートル" refID="1" type="最大風速" unit="m/s">18</jmx_eb:WindSpeed>
+<jmx_eb:WindSpeed description="３０メートル" refID="1" type="最大瞬間風速" unit="m/s">30</jmx_eb:WindSpeed>
+<jmx_eb:WindSpeed description="２３メートル" refID="2" type="最大風速" unit="m/s">23</jmx_eb:WindSpeed>
+<jmx_eb:WindSpeed description="３５メートル" refID="2" type="最大瞬間風速" unit="m/s">35</jmx_eb:WindSpeed>
+</Base>
+</WindSpeedPart>
+</Property>
+</Kind>
+<Area codeType="気象情報／府県予報区・細分区域等">
+<Name>宮古島地方</Name>
+<Code>473000</Code>
+<CodeList>473001 473002</CodeList>
+</Area>
+</Item>
+<Item>
+<Kind>
+<Property>
+<Type>風の予想</Type>
+<WindDirectionPart>
+<Base>
+<jmx_eb:WindDirection description="北東" refID="1" type="風向" unit="８方位漢字">北東</jmx_eb:WindDirection>
+<jmx_eb:WindDirection description="北東" refID="2" type="風向" unit="８方位漢字">北東</jmx_eb:WindDirection>
+</Base>
+</WindDirectionPart>
+<WindSpeedPart>
+<Base>
+<jmx_eb:WindSpeed description="１８メートル" refID="1" type="最大風速" unit="m/s">18</jmx_eb:WindSpeed>
+<jmx_eb:WindSpeed description="３０メートル" refID="1" type="最大瞬間風速" unit="m/s">30</jmx_eb:WindSpeed>
+<jmx_eb:WindSpeed description="２３メートル" refID="2" type="最大風速" unit="m/s">23</jmx_eb:WindSpeed>
+<jmx_eb:WindSpeed description="３５メートル" refID="2" type="最大瞬間風速" unit="m/s">35</jmx_eb:WindSpeed>
+</Base>
+</WindSpeedPart>
+</Property>
+</Kind>
+<Area codeType="気象情報／府県予報区・細分区域等">
+<Name>八重山地方</Name>
+<Code>474000</Code>
+<CodeList>474011 474012 474020</CodeList>
+</Area>
+</Item>
+<Item>
+<Kind>
+<Property>
+<Type>風の予想</Type>
+<WindDirectionPart>
+<Base>
+<jmx_eb:WindDirection condition="値なし" refID="1" type="風向" unit="８方位漢字"/>
+<jmx_eb:WindDirection description="東" refID="2" type="風向" unit="８方位漢字">東</jmx_eb:WindDirection>
+</Base>
+</WindDirectionPart>
+<WindSpeedPart>
+<Base>
+<jmx_eb:WindSpeed condition="値なし" refID="1" type="最大風速" unit="m/s"/>
+<jmx_eb:WindSpeed condition="値なし" refID="1" type="最大瞬間風速" unit="m/s"/>
+<jmx_eb:WindSpeed description="１５メートル" refID="2" type="最大風速" unit="m/s">15</jmx_eb:WindSpeed>
+<jmx_eb:WindSpeed description="２５メートル" refID="2" type="最大瞬間風速" unit="m/s">25</jmx_eb:WindSpeed>
+</Base>
+</WindSpeedPart>
+</Property>
+</Kind>
+<Area codeType="気象情報／府県予報区・細分区域等">
+<Name>大東島地方</Name>
+<Code>472000</Code>
+<CodeList>472000</CodeList>
+</Area>
+</Item>
+<Item>
+<Kind>
+<Property>
+<Type>風の予想</Type>
+<Text refID="1" type="時系列補足"/>
+<Text refID="2" type="時系列補足"/>
+<Text type="補足"/>
+</Property>
+</Kind>
+</Item>
+</TimeSeriesInfo>
+<TimeSeriesInfo>
+<TimeDefines>
+<TimeDefine timeId="1">
+<DateTime>2026-10-20T00:00:00+09:00</DateTime>
+<Duration>P1D</Duration>
+<Name>２０日</Name>
+</TimeDefine>
+<TimeDefine timeId="2">
+<DateTime>2026-10-21T00:00:00+09:00</DateTime>
+<Duration>P1D</Duration>
+<Name>２１日</Name>
+</TimeDefine>
+<TimeDefine timeId="3">
+<DateTime>2026-10-22T00:00:00+09:00</DateTime>
+<Duration>P1D</Duration>
+<Name>２２日</Name>
+</TimeDefine>
+</TimeDefines>
+<Item>
+<Kind>
+<Property>
+<Type>波の予想</Type>
+<Text type="解説"/>
+<Text refID="1" type="時系列解説">２０日に予想される波の高さ</Text>
+<Text refID="2" type="時系列解説">２１日に予想される波の高さ</Text>
+<Text refID="3" type="時系列解説">２２日に予想される波の高さ</Text>
+<Text type="気象要素">予想される波の高さ</Text>
+</Property>
+</Kind>
+</Item>
+<Item>
+<Kind>
+<Property>
+<Type>波の予想</Type>
+<WaveHeightPart>
+<Base>
+<jmx_eb:WaveHeight condition="うねり" description="３メートル　うねりを伴う" refID="1" type="波高" unit="m">3</jmx_eb:WaveHeight>
+<jmx_eb:WaveHeight condition="うねり" description="５メートル　うねりを伴う" refID="2" type="波高" unit="m">5</jmx_eb:WaveHeight>
+<jmx_eb:WaveHeight condition="うねり" description="７メートル　うねりを伴う" refID="3" type="波高" unit="m">7</jmx_eb:WaveHeight>
+</Base>
+</WaveHeightPart>
+</Property>
+</Kind>
+<Area codeType="気象情報／府県予報区・細分区域等">
+<Name>沖縄本島地方</Name>
+<Code>471000</Code>
+<CodeList>471011 471012 471013 471021 471022 471023 471024 471030</CodeList>
+</Area>
+</Item>
+<Item>
+<Kind>
+<Property>
+<Type>波の予想</Type>
+<WaveHeightPart>
+<Base>
+<jmx_eb:WaveHeight condition="うねり" description="３メートル　うねりを伴う" refID="1" type="波高" unit="m">3</jmx_eb:WaveHeight>
+<jmx_eb:WaveHeight condition="うねり" description="５メートル　うねりを伴う" refID="2" type="波高" unit="m">5</jmx_eb:WaveHeight>
+<jmx_eb:WaveHeight condition="うねり" description="６メートル　うねりを伴う" refID="3" type="波高" unit="m">6</jmx_eb:WaveHeight>
+</Base>
+</WaveHeightPart>
+</Property>
+</Kind>
+<Area codeType="気象情報／府県予報区・細分区域等">
+<Name>大東島地方</Name>
+<Code>472000</Code>
+<CodeList>472000</CodeList>
+</Area>
+</Item>
+<Item>
+<Kind>
+<Property>
+<Type>波の予想</Type>
+<WaveHeightPart>
+<Base>
+<jmx_eb:WaveHeight condition="うねり" description="３メートル　うねりを伴う" refID="1" type="波高" unit="m">3</jmx_eb:WaveHeight>
+<jmx_eb:WaveHeight condition="うねり" description="６メートル　うねりを伴う" refID="2" type="波高" unit="m">6</jmx_eb:WaveHeight>
+<jmx_eb:WaveHeight condition="うねり" description="８メートル　うねりを伴う" refID="3" type="波高" unit="m">8</jmx_eb:WaveHeight>
+</Base>
+</WaveHeightPart>
+</Property>
+</Kind>
+<Area codeType="気象情報／府県予報区・細分区域等">
+<Name>宮古島地方</Name>
+<Code>473000</Code>
+<CodeList>473001 473002</CodeList>
+</Area>
+</Item>
+<Item>
+<Kind>
+<Property>
+<Type>波の予想</Type>
+<WaveHeightPart>
+<Base>
+<jmx_eb:WaveHeight condition="うねり" description="２．５メートル　うねりを伴う" refID="1" type="波高" unit="m">2.5</jmx_eb:WaveHeight>
+<jmx_eb:WaveHeight condition="うねり" description="６メートル　うねりを伴う" refID="2" type="波高" unit="m">6</jmx_eb:WaveHeight>
+<jmx_eb:WaveHeight condition="うねり" description="８メートル　うねりを伴う" refID="3" type="波高" unit="m">8</jmx_eb:WaveHeight>
+</Base>
+</WaveHeightPart>
+</Property>
+</Kind>
+<Area codeType="気象情報／府県予報区・細分区域等">
+<Name>八重山地方</Name>
+<Code>474000</Code>
+<CodeList>474011 474012 474020</CodeList>
+</Area>
+</Item>
+<Item>
+<Kind>
+<Property>
+<Type>波の予想</Type>
+<Text refID="1" type="時系列補足"/>
+<Text refID="2" type="時系列補足"/>
+<Text refID="3" type="時系列補足"/>
+<Text type="補足"/>
+</Property>
+</Kind>
+</Item>
+</TimeSeriesInfo>
+</MeteorologicalInfos>
+<MeteorologicalInfos type="防災事項">
+<MeteorologicalInfo>
+<DateTime>2026-10-20T16:26:00+09:00</DateTime>
+<Item>
+<Kind>
+<Property>
+<Type>防災事項</Type>
+<Text type="本文">沖縄地方では、大陸の高気圧と台風との間で気圧の傾きが大きくなるため、２１日から次第に風が強まる見込みです。その後台風の影響で更に風が強まり、先島諸島では２３日から２４日頃は暴風となる見込みです。先島諸島では暴風に警戒し、沖縄本島地方と大東島地方では強風に注意してください。風が強まる前に早めの台風対策が必要です。
+沿岸の海域ではうねりを伴い、先島諸島では２１日から、沖縄本島地方と大東島地方では２２日から大しけとなる見込みです。うねりを伴う高波に警戒してください。
+先島諸島では、２３日から２４日頃は警報級の大雨となる見込みです。土砂災害に厳重に警戒し、低い土地の浸水、河川の増水や氾濫に警戒してください。
+台風の進路等によっては、先島諸島では２３日から２４日頃は警報級の高潮となるおそれがあります。海岸や河口付近の低い土地での高潮による浸水や冠水に十分注意してください。
+沖縄地方では、２１日から発達した積乱雲の下での落雷や突風、急な強い雨に注意してください。</Text>
+</Property>
+</Kind>
+</Item>
+</MeteorologicalInfo>
+</MeteorologicalInfos>
+<MeteorologicalInfos type="付加情報">
+<MeteorologicalInfo>
+<DateTime>2026-10-20T16:26:00+09:00</DateTime>
+<Item>
+<Kind>
+<Property>
+<Type>補足事項</Type>
+<Text type="本文">今後発表する防災気象情報に留意してください。
+次の「沖縄地方気象解説情報（台風第３０号）」は、２１日５時頃に発表する予定です。
+</Text>
+</Property>
+</Kind>
+</Item>
+</MeteorologicalInfo>
+</MeteorologicalInfos>
+</Body>
+</Report>
