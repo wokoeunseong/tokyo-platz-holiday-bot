@@ -109,6 +109,18 @@ class DailyBriefingTests(unittest.TestCase):
         root = daily.xml_root(xml)
         root.find("Head/Headline/Text").text = "台風第３０号が発生しました。"
         self.assertIsNone(daily.parse_typhoon_notice(ET.tostring(root), now))
+        root.find("Head/Headline/Text").text = "台風第３０号はフィリピンに上陸しました。日本への影響はありません。"
+        self.assertIsNone(daily.parse_typhoon_notice(ET.tostring(root), now))
+
+    def test_fallback_weather_discloses_its_own_issue_time(self):
+        import xml.etree.ElementTree as ET
+        root = daily.xml_root(self.morning)
+        for prop in root.findall(".//Property"):
+            if prop.findtext("Type") == "３時間内卓越天気":
+                prop.find("WeatherPart").clear()
+        data = daily.parse_forecasts([ET.tostring(root), self.previous], self.now)
+        msg = daily.build_message(self.now, data, {})
+        self.assertIn("오전 날씨 10/19 17:00 예보", msg)
 
     def test_ended_cancelled_stale_typhoon_notices_are_hidden(self):
         xml = (FIXTURES / "typhoon-okinawa.xml").read_text()

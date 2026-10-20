@@ -112,7 +112,7 @@ def parse_forecasts(documents, now):
                                 "probability": numeric(value.text, 0, 100), "issued": issued})
                         elif (area == "130010" and kind == "３時間内卓越天気"
                               and value.tag == "Weather" and duration == "PT3H"):
-                            weather.setdefault(dt.hour, weather_label(value.text))
+                            weather.setdefault(dt.hour, (weather_label(value.text), issued))
                         elif station == "44132" and value.tag == "Temperature":
                             key = ("minimum" if kind in ("朝の最低気温", "最低気温")
                                    else "maximum" if kind == "最高気温" else None)
@@ -125,8 +125,9 @@ def parse_forecasts(documents, now):
                                 result[key] = {"value": numeric(value.text, -60, 60), "issued": issued}
     for hour, _ in PERIODS:
         period = result["periods"].setdefault(hour, {"probability": None, "issued": result["issued"]})
-        labels = [weather.get(hour), weather.get(hour + 3)]
-        period["weather"] = " → ".join(dict.fromkeys(labels)) if all(labels) else "날씨 확인 불가"
+        slots = [weather.get(hour), weather.get(hour + 3)]
+        period["weather"] = " → ".join(dict.fromkeys(s[0] for s in slots)) if all(slots) else "날씨 확인 불가"
+        period["weather_issued"] = list(dict.fromkeys(s[1] for s in slots)) if all(slots) else []
     if not any(p["probability"] is not None for p in result["periods"].values()):
         # Missing probability is still shown explicitly; dates are never substituted.
         if not weather and result["maximum"] is None and result["minimum"] is None:
@@ -181,7 +182,7 @@ def parse_typhoon_notice(document, now):
     # Formation, position, remote track forecasts and "no warnings needed" do not qualify.
     sentences = re.split("[。\\n]", headline)
     actionable = [s for s in sentences if
-                  re.search(r"警戒してください|厳重に警戒|台風対策が必要|上陸しました", s)
+                  re.search(r"警戒してください|厳重に警戒|台風対策が必要", s)
                   and not re.search(r"必要[はが]?ありません|必要[はが]?ない|おそれ[はが]?ありません|影響はなく", s)]
     if not actionable:
         return None
@@ -285,6 +286,9 @@ def build_message(now, forecast, holidays, typhoons=()):
             source = forecast["periods"][hour]["issued"]
             if source != forecast["issued"]:
                 sources.append(f'{label} {source:%m/%d %H:%M} 예보')
+            for weather_source in forecast["periods"][hour]["weather_issued"]:
+                if weather_source != source:
+                    sources.append(f'{label} 날씨 {weather_source:%m/%d %H:%M} 예보')
         for key, label in (("minimum", "최저"), ("maximum", "최고")):
             item = forecast[key]
             if item and item["issued"] != forecast["issued"]:
