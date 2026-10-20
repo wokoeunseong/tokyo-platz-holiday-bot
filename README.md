@@ -36,7 +36,8 @@ Include a typhoon section in the morning briefing only when:
 1. JMA currently lists it as a numbered typhoon.
 2. A dedicated national/regional/prefectural typhoon advisory is operational,
    not cancelled, and issued within 18 hours.
-3. Its headline explicitly calls for vigilance/preparation or reports landfall.
+3. Its headline explicitly calls for vigilance/preparation. A landfall report
+   alone, including landfall outside Japan, does not qualify.
 
 Formation notices, position bulletins, forecast tracks and storm probability
 products alone never trigger a message. The Japanese regional advisory is the
