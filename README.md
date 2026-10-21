@@ -1,6 +1,6 @@
 # Tokyo morning briefing
 
-One daily Slack Workflow message, scheduled for 08:00 Japan/Korea time.
+One daily Slack Workflow message, scheduled for 02:00 Japan/Korea time (17:00 UTC on the previous day).
 GitHub Actions may run later than the requested time. The existing
 `SLACK_WEBHOOK_URL` secret and `{"message": ...}` Workflow payload are retained.
 
